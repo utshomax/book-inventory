@@ -21,8 +21,15 @@ import { Book } from "../types/books";
 import WarningIcon from '@mui/icons-material/Warning';
 import TablePagination from '@mui/material/TablePagination';
 import TableFooter from "@mui/material/TableFooter";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import CloseIcon from '@mui/icons-material/Close';
+import Snackbar from "@mui/material/Snackbar";
 
-const HOST = 'https://book-inv-be.onrender.com' // 'http://localhost:5000'
+const HOST = 'https://book-inv-be.onrender.com' // 'http://localhost:5000' //
 
 const useStyles = makeStyles({
   ellipsis: {
@@ -42,16 +49,6 @@ const useStyles = makeStyles({
   }
 });
 
-interface TablePaginationActionsProps {
-  count: number;
-  page: number;
-  booksPerPage: number;
-  onPageChange: (
-    event: React.MouseEvent<HTMLButtonElement>,
-    newPage: number,
-  ) => void;
-}
-
 
 const BookList: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -59,19 +56,33 @@ const BookList: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
   const [page, setPage] = React.useState(0);
   const [booksPerPage, setRowsPerPage] = React.useState(5);
-
+  const [checked, setChecked] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const [snackmessage, setMessage] = React.useState("");
   const classes = useStyles();
 
-  const fetchBooks = async () => {
+  const fetchBooks = async (withFilter = false) => {
     try {
-      const response = await fetch(HOST + "/api/book");
+      handleSnack("Loading books...");
+      const response = await fetch(HOST + "/api/book" + (withFilter ? "?sortByLowStockAlert=true" : ""));
       const data = await response.json();
       setBooks(data);
     } catch (error) {
       console.error("Error fetching books:", error);
     }
   };
-  
+  const handleSnack = (message:string) => {
+    setMessage(message)
+    setOpen(true);
+  };
+
+  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setOpen(false);
+  };
   useEffect(() => {
     fetchBooks();
   }, []);
@@ -85,7 +96,15 @@ const BookList: React.FC = () => {
     setSelectedBook(null);
     setOpenModal(true);
   };
-
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if(event.target.checked){
+      setChecked(true);
+      fetchBooks(true);
+    }else{
+      setChecked(false);
+      fetchBooks();
+    }
+  }
   const handleModalClose = () => {
     setOpenModal(false);
   };
@@ -105,13 +124,24 @@ const BookList: React.FC = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
+  const action = (
+    <React.Fragment>
+      <IconButton
+        size="small"
+        aria-label="close"
+        color="inherit"
+        onClick={handleClose}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    </React.Fragment>
+  );
   const handleFormSubmit = (book: Book) => {
     // Logic to update the book
     if(book._id == "" || book._id == null || !book._id){
       addBookToServer(book);
       fetchBooks();
-      setOpenModal(false);
+      handleModalClose()
       return
     }
     console.log("Updated book:", book);
@@ -125,11 +155,12 @@ const BookList: React.FC = () => {
         return prevBook;
       });
     });
-    //setOpenModal(false);
+    setOpenModal(false);
   };
 
   const updateBookToServer = async (book: Book) => {
     try {
+      handleSnack("Updating book: " + book.name);
       const response = await fetch(
         HOST + `/api/book/${book._id}`,
         {
@@ -143,13 +174,33 @@ const BookList: React.FC = () => {
       const data = await response.json();
       console.log("Updated book:", data);
     } catch (error) {
+      handleSnack("Error updating book: " + book.name);
       console.error("Error updating book:", error);
+    }
+  };
+
+  const deleteBook = async (book: Book) => {
+    try {
+      const response = await fetch(
+        HOST + `/api/book/${book._id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await response.json();
+      handleSnack("Deleted book: " + book.name);
+      console.log("Deleted book:", data);
+      fetchBooks();
+    } catch (error) {
+      handleSnack("Error deleting book: " + book.name);
+      console.error("Error deleting book:", error);
     }
   };
 
 
   const addBookToServer = async (book: Book) => {
     try {
+      handleSnack("Adding book: " + book.name);
       const response = await fetch(
         HOST + `/api/book`,
         {
@@ -163,6 +214,7 @@ const BookList: React.FC = () => {
       const data = await response.json();
       console.log("Added book:", data);
     } catch (error) {
+      handleSnack("Error adding book: " + book.name);
       console.error("Error updating book:", error);
     }
   };
@@ -185,6 +237,20 @@ const BookList: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell colSpan={8}>
+              <FormControlLabel
+                  value="end"
+                  control={ <Switch
+                    checked={checked}
+                    onChange={handleFilterChange}
+                    inputProps={{ 'aria-label': 'controlled' }}
+                  />}
+                  label="Low Stock Alert"
+                  labelPlacement="end"
+                />
+              </TableCell>
+              </TableRow>
+            <TableRow>
               <TableCell>#</TableCell>
               <TableCell>Cover</TableCell>
               <TableCell>Name</TableCell>
@@ -193,6 +259,7 @@ const BookList: React.FC = () => {
               <TableCell>Description</TableCell>
               <TableCell>Price</TableCell>
               <TableCell>Stock</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -226,6 +293,26 @@ const BookList: React.FC = () => {
                       }
                         </>
                   </TableCell>
+                <TableCell>
+                  <IconButton
+                    aria-label="edit"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleRowClick(book);
+                    }}
+                  >
+                    <EditIcon fontSize="small"/>
+                  </IconButton>
+                  <IconButton
+                    aria-label="delete"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteBook(book);
+                    }}
+                  >
+                    <DeleteIcon fontSize="small"/>
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
             {emptyRows > 0 && (
@@ -274,6 +361,14 @@ const BookList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={open}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        message={snackmessage}
+        action={action}
+        color="primary"
+      />
     </Container>
   );
 };
