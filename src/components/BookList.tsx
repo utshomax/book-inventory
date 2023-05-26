@@ -111,6 +111,7 @@ const BookList: React.FC = () => {
     if(book._id == "" || book._id == null || !book._id){
       addBookToServer(book);
       fetchBooks();
+      setOpenModal(false);
       return
     }
     console.log("Updated book:", book);
