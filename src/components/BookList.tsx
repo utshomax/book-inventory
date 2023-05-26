@@ -22,7 +22,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import TablePagination from '@mui/material/TablePagination';
 import TableFooter from "@mui/material/TableFooter";
 
-const HOST = process.env.HOST_URL || 'http://localhost:5000'
+const HOST = 'https://book-inv-be.onrender.com' // 'http://localhost:5000'
 
 const useStyles = makeStyles({
   ellipsis: {
