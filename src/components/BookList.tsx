@@ -22,6 +22,8 @@ import WarningIcon from '@mui/icons-material/Warning';
 import TablePagination from '@mui/material/TablePagination';
 import TableFooter from "@mui/material/TableFooter";
 
+const HOST = process.env.HOST_URL || 'http://localhost:5000'
+
 const useStyles = makeStyles({
   ellipsis: {
     maxWidth: 200, // percentage also works
@@ -62,7 +64,7 @@ const BookList: React.FC = () => {
 
   const fetchBooks = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/book");
+      const response = await fetch(HOST + "/api/book");
       const data = await response.json();
       setBooks(data);
     } catch (error) {
@@ -128,7 +130,7 @@ const BookList: React.FC = () => {
   const updateBookToServer = async (book: Book) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/book/${book._id}`,
+        HOST + `/api/book/${book._id}`,
         {
           method: "PUT",
           headers: {
@@ -148,7 +150,7 @@ const BookList: React.FC = () => {
   const addBookToServer = async (book: Book) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/book`,
+        HOST + `/api/book`,
         {
           method: "POST",
           headers: {
