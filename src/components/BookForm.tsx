@@ -8,7 +8,7 @@ interface BookFormProps {
 }
 
 const BookForm: React.FC<BookFormProps> = ({ book, onSubmit }) => {
-
+  //console.log(book);
   const getDefaultFormData = (): Book => ({
     _id: "",
     name: "",
@@ -43,16 +43,19 @@ const BookForm: React.FC<BookFormProps> = ({ book, onSubmit }) => {
   const [formData, setFormData] = useState<Book>(book || getDefaultFormData());
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
+    let { name, value, checked} = event.target;
+    let updatebool = false
     const nameParts = name?.split(".");
     if (nameParts && nameParts.length === 2) {
       const [nestedProperty, subProperty] = nameParts;
-  
+      if(nestedProperty === "stock" && subProperty === "enableLowStockAlert"){
+        updatebool = true
+      }
       setFormData((prevFormData) => ({
         ...prevFormData,
         [nestedProperty]: {
           ...prevFormData[nestedProperty as keyof Book] as Object,
-          [subProperty]: !isNaN(Number(value)) ? Number(value) : value,
+          [subProperty]: updatebool ? checked : !isNaN(Number(value)) ? Number(value) : value,
         },
       }));
     } else {
@@ -61,6 +64,7 @@ const BookForm: React.FC<BookFormProps> = ({ book, onSubmit }) => {
         [name as string]: value,
       }));
     }
+    console.log(formData);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -154,7 +158,9 @@ const BookForm: React.FC<BookFormProps> = ({ book, onSubmit }) => {
             />
             <FormControlLabel
               control={
-                <Switch checked={formData.stock.enableLowStockAlert} onChange={handleChange} name="stock.enableLowStockAlert" />
+                <Switch checked={formData.stock.enableLowStockAlert } 
+                onChange={handleChange} 
+                name="stock.enableLowStockAlert" />
               }
               label="Enable Low Stock Alert"
               labelPlacement="start"
